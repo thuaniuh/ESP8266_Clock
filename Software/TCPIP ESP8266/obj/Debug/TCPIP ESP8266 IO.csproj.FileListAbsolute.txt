@@ -1,0 +1,24 @@
+D:\ESP8266-I-O-Over-TCP-IP-main\TCPIP ESP8266\bin\Debug\TCPIP ESP8266.exe.config
+D:\ESP8266-I-O-Over-TCP-IP-main\TCPIP ESP8266\bin\Debug\TCPIP ESP8266.exe
+D:\ESP8266-I-O-Over-TCP-IP-main\TCPIP ESP8266\bin\Debug\TCPIP ESP8266.pdb
+D:\ESP8266-I-O-Over-TCP-IP-main\TCPIP ESP8266\bin\Debug\SimpleTCP.dll
+D:\ESP8266-I-O-Over-TCP-IP-main\TCPIP ESP8266\obj\Debug\TCPIP ESP8266 IO.csproj.AssemblyReference.cache
+D:\ESP8266-I-O-Over-TCP-IP-main\TCPIP ESP8266\obj\Debug\TCPIP_ESP8266.Form1.resources
+D:\ESP8266-I-O-Over-TCP-IP-main\TCPIP ESP8266\obj\Debug\TCPIP_ESP8266.Properties.Resources.resources
+D:\ESP8266-I-O-Over-TCP-IP-main\TCPIP ESP8266\obj\Debug\TCPIP ESP8266 IO.csproj.GenerateResource.cache
+D:\ESP8266-I-O-Over-TCP-IP-main\TCPIP ESP8266\obj\Debug\TCPIP ESP8266 IO.csproj.CoreCompileInputs.cache
+D:\ESP8266-I-O-Over-TCP-IP-main\TCPIP ESP8266\obj\Debug\TCPIP ES.08C6B6B6.Up2Date
+D:\ESP8266-I-O-Over-TCP-IP-main\TCPIP ESP8266\obj\Debug\TCPIP ESP8266.exe
+D:\ESP8266-I-O-Over-TCP-IP-main\TCPIP ESP8266\obj\Debug\TCPIP ESP8266.pdb
+D:\ESP8266-I-O-Over-TCP-IP-main - Copy\TCPIP ESP8266\bin\Debug\TCPIP ESP8266.exe.config
+D:\ESP8266-I-O-Over-TCP-IP-main - Copy\TCPIP ESP8266\bin\Debug\TCPIP ESP8266.exe
+D:\ESP8266-I-O-Over-TCP-IP-main - Copy\TCPIP ESP8266\bin\Debug\TCPIP ESP8266.pdb
+D:\ESP8266-I-O-Over-TCP-IP-main - Copy\TCPIP ESP8266\bin\Debug\SimpleTCP.dll
+D:\ESP8266-I-O-Over-TCP-IP-main - Copy\TCPIP ESP8266\obj\Debug\TCPIP ESP8266 IO.csproj.AssemblyReference.cache
+D:\ESP8266-I-O-Over-TCP-IP-main - Copy\TCPIP ESP8266\obj\Debug\TCPIP_ESP8266.Form1.resources
+D:\ESP8266-I-O-Over-TCP-IP-main - Copy\TCPIP ESP8266\obj\Debug\TCPIP_ESP8266.Properties.Resources.resources
+D:\ESP8266-I-O-Over-TCP-IP-main - Copy\TCPIP ESP8266\obj\Debug\TCPIP ESP8266 IO.csproj.GenerateResource.cache
+D:\ESP8266-I-O-Over-TCP-IP-main - Copy\TCPIP ESP8266\obj\Debug\TCPIP ESP8266 IO.csproj.CoreCompileInputs.cache
+D:\ESP8266-I-O-Over-TCP-IP-main - Copy\TCPIP ESP8266\obj\Debug\TCPIP ES.08C6B6B6.Up2Date
+D:\ESP8266-I-O-Over-TCP-IP-main - Copy\TCPIP ESP8266\obj\Debug\TCPIP ESP8266.exe
+D:\ESP8266-I-O-Over-TCP-IP-main - Copy\TCPIP ESP8266\obj\Debug\TCPIP ESP8266.pdb

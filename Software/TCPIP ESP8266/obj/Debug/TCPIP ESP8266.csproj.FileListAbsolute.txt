@@ -1,0 +1,12 @@
+C:\Users\LENOVO\source\repos\21 September 2022\TCPIP ESP8266\TCPIP ESP8266\bin\Debug\TCPIP ESP8266.exe.config
+C:\Users\LENOVO\source\repos\21 September 2022\TCPIP ESP8266\TCPIP ESP8266\bin\Debug\TCPIP ESP8266.exe
+C:\Users\LENOVO\source\repos\21 September 2022\TCPIP ESP8266\TCPIP ESP8266\bin\Debug\TCPIP ESP8266.pdb
+C:\Users\LENOVO\source\repos\21 September 2022\TCPIP ESP8266\TCPIP ESP8266\bin\Debug\SimpleTCP.dll
+C:\Users\LENOVO\source\repos\21 September 2022\TCPIP ESP8266\TCPIP ESP8266\obj\Debug\TCPIP ESP8266.csproj.AssemblyReference.cache
+C:\Users\LENOVO\source\repos\21 September 2022\TCPIP ESP8266\TCPIP ESP8266\obj\Debug\TCPIP_ESP8266.Form1.resources
+C:\Users\LENOVO\source\repos\21 September 2022\TCPIP ESP8266\TCPIP ESP8266\obj\Debug\TCPIP_ESP8266.Properties.Resources.resources
+C:\Users\LENOVO\source\repos\21 September 2022\TCPIP ESP8266\TCPIP ESP8266\obj\Debug\TCPIP ESP8266.csproj.GenerateResource.cache
+C:\Users\LENOVO\source\repos\21 September 2022\TCPIP ESP8266\TCPIP ESP8266\obj\Debug\TCPIP ESP8266.csproj.CoreCompileInputs.cache
+C:\Users\LENOVO\source\repos\21 September 2022\TCPIP ESP8266\TCPIP ESP8266\obj\Debug\TCPIP ESP8266.csproj.CopyComplete
+C:\Users\LENOVO\source\repos\21 September 2022\TCPIP ESP8266\TCPIP ESP8266\obj\Debug\TCPIP ESP8266.exe
+C:\Users\LENOVO\source\repos\21 September 2022\TCPIP ESP8266\TCPIP ESP8266\obj\Debug\TCPIP ESP8266.pdb
