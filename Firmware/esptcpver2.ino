@@ -18,7 +18,7 @@
 bool offlineMode = false;  // Biến này sẽ là true khi không có WiFi và RTC không kích hoạt
 bool attemptedReconnect = false;  // Biến này để theo dõi xem người dùng đã thử kết nối lại chưa
 
-char a;
+
 String ClientData;
 float temperature, humidity;
 int current_screen = 0;  // 0 = menu, 1 = screenshot
@@ -53,7 +53,7 @@ unsigned long lastDebounceTime_stop = 0;
 const unsigned long debounceDelay_stop = 50;
 int lastButtonState_stop = HIGH;
 
-// Variables for time synchronization
+// biến sử dụng cho đồng bộ thời gian
 int day, month, year, hour, minute, second;
 
 bool SyncWithPCTime = false;
