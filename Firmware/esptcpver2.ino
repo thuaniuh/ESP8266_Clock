@@ -6,59 +6,64 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <AHT20.h>
-#include <RTClib.h>  
-#define BUTTON_SELECT_PIN D7 // select and back button
-#define BUTTON_DOWN_PIN D6   // down button
-#define BUTTON_STOP_PIN D8   // stop buzz
-#define LED_PIN D5           // lamp 
-#define LED_PIN2 D3          // connect
-#define BUZZ_PIN D0          // alarm buzz 
+#include <RTClib.h>  // Thư viện hỗ trợ DS3231
 
-// Global variables
-bool offlineMode = false;  // Biến này sẽ là true khi không có WiFi và RTC không kích hoạt
-bool attemptedReconnect = false;  // Biến này để theo dõi xem người dùng đã thử kết nối lại chưa
+// Pin definitions
+#define BUTTON_SELECT_PIN D7 // Select and back button
+#define BUTTON_DOWN_PIN D6   // Down button
+#define BUTTON_STOP_PIN D8   // Stop button
+#define LED_PIN D5           // Lamp pin
+#define LED_PIN2 D3          // Connect LED pin
+#define BUZZ_PIN D0          // Alarm buzz
 
+// Wi-Fi credentials
+const char* ssid = "inpy";
+const char* password = "micropython1";
 
-String ClientData;
-float temperature, humidity;
-int current_screen = 0;  // 0 = menu, 1 = screenshot
-int selected = 0, entered = -1;
-unsigned long previousMillis = 0;
-const long interval = 500;  // OLED update interval
-bool buzzerActive = false;
+// OLED display and sensor objects
+Adafruit_SSD1306 display(128, 64, &Wire, -1); 
+AHT20 aht20;
+RTC_DS3231 rtc;
 
-//
-WiFiServer server(8080);// mở port 8080
+// Server
+WiFiServer server(8080);
 WiFiClient client;
 
-// WiFi credentials
-const char* ssid = "";
-const char* password ="";
-
-RTC_DS3231 rtc;
+// Global variables
+bool offlineMode = false;
 bool rtcAvailable = false;
-bool alarmActive = false; // Trạng thái báo thức
+bool attemptedReconnect = false;
+bool alarmActive = false;
 bool lampActive = false;
+bool buzzerActive = false;
+bool SyncWithPCTime = false;
 
-// NTP Timezone settings
+float temperature, humidity;
+int selected = 0;
+int entered = -1;
+int day, month, year, hour, minute, second;
+unsigned long previousMillis = 0;
+const long interval = 500;  // OLED update interval
+unsigned long lastDebounceTime_stop = 0;
+const unsigned long debounceDelay_stop = 50;
+
+char receivedChar;
+String clientData;
+
+// Timezone settings
 const int GMTOffset = 25200;  // GMT Offset in seconds (7 hours)
 const int daylightOffset = 0; // Daylight savings offset in seconds
 
-// OLED display
-Adafruit_SSD1306 display(128, 64, &Wire, -1); 
-AHT20 aht20;
+// Enum for system modes
+enum SystemMode {
+  OFFLINE_MODE,
+  WIFI_CONNECTED_MODE,
+  RTC_CONNECTED_MODE
+};
 
-// Button state
-unsigned long lastDebounceTime_stop = 0;
-const unsigned long debounceDelay_stop = 50;
-int lastButtonState_stop = HIGH;
+SystemMode currentMode = OFFLINE_MODE;
 
-// biến sử dụng cho đồng bộ thời gian
-int day, month, year, hour, minute, second;
-
-bool SyncWithPCTime = false;
-
-// Hàm đồng bộ thời gian với chuỗi GMT
+// Function to synchronize time with received PC time and offset
 void syncTimeWithLocalTimeAndOffset(String receivedData) {
     float offsetHours;
     SyncWithPCTime = true;
@@ -71,14 +76,15 @@ void syncTimeWithLocalTimeAndOffset(String receivedData) {
         return;
     }
 
+
     // Tạo cấu trúc thời gian
     struct tm timeinfo;
     timeinfo.tm_year = year - 1900;
     timeinfo.tm_mon = month - 1;
     timeinfo.tm_mday = day;
-    timeinfo.tm_hour = hour - 7;
+    timeinfo.tm_hour = hour ;
     timeinfo.tm_min = minute;
-    timeinfo.tm_sec = second;
+    timeinfo.tm_sec = second -10;
 
     // Chuyển đổi thành định dạng time_t
     time_t t = mktime(&timeinfo);
@@ -90,26 +96,23 @@ void syncTimeWithLocalTimeAndOffset(String receivedData) {
     timeval epoch = { t, 0 };
     settimeofday(&epoch, NULL);
 
-    
 }
 
+// OLED initialization function
 void setup_oled() {
   Wire.begin();
-  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
-    //Serial.println(F("SSD1306 allocation failed"));
-    for(;;); // Freeze on failure
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    for(;;);  // Freeze on failure
   }
-  
-  if(!aht20.begin()) {
-    
+
+  if (!aht20.begin()) {
     while (1);  // Freeze on failure
   }
-  
-  //Serial.println("AHT20 acknowledged.");
   delay(2000);  // Short delay for startup
   display.clearDisplay();
 }
 
+// khai báo GPIO
 void pinMode_init() {
   pinMode(LED_PIN, OUTPUT);
   pinMode(LED_PIN2, OUTPUT);
@@ -119,104 +122,68 @@ void pinMode_init() {
   pinMode(BUTTON_STOP_PIN, INPUT_PULLUP);
 }
 
-
+// Wi-Fi connection function
 void wifiConnect() {
   if (WiFi.status() != WL_CONNECTED && !offlineMode && !attemptedReconnect) {
-    // Hiển thị thông báo kết nối WiFi trên OLED chỉ khi người dùng chưa thử reconnect
     display.clearDisplay();
     display.setTextSize(1);
-    display.setTextColor(WHITE);
     display.setCursor(0, 0);
     display.print("Connecting to WiFi...");
     display.display();
-    
+
     WiFi.begin(ssid, password);
-    Serial.println("");
-    
     unsigned long startAttemptTime = millis();
-    while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 5000) {  // Chờ 5 giây để kết nối Wi-Fi
+
+    while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 5000) {
       delay(500);
-      Serial.print(".");
     }
 
     if (WiFi.status() == WL_CONNECTED) {
-      Serial.println("\nConnected to WiFi");
-      Serial.print("IP Address: ");
-      Serial.println(WiFi.localIP());
-      
-      // Cấu hình NTP và đồng bộ thời gian
+      display.clearDisplay();
+      display.print("WiFi Connected");
+      display.display();
+      delay(1000);
+
+      // Cấu hình thời gian từ máy chủ NTP
       configTime(GMTOffset, daylightOffset, "pool.ntp.org", "time.nist.gov");
       time_t now = time(nullptr);
-      while (now < 8 * 3600 * 2) { // Chờ thời gian được đặt
+      
+      // Chờ cho đến khi nhận được thời gian hợp lệ (now >= 8 * 3600 * 2 tương ứng với thời gian từ năm 1970)
+      while (now < 8 * 3600 * 2) {
         delay(500);
         now = time(nullptr);
       }
-      
-      Serial.println("Time synchronized");
 
-      // Hiển thị thông báo đồng bộ thành công
-      display.clearDisplay();
-      display.setTextSize(1);
-      display.setCursor(0, 0);
-      display.print("Time synchronized");
-      display.display();
-      delay(1000);  // Hiển thị thông báo trong 1 giây
-      
-      // Reset trạng thái offline sau khi kết nối thành công
+      // Thời gian đã đồng bộ thành công
       offlineMode = false;
-      attemptedReconnect = false;  // Đặt lại sau khi kết nối thành công
-    } else if(rtcAvailable){
-      if (!rtc.begin()) {
-    Serial.println("Couldn't find RTC");
-    
-    // Hiển thị thông báo nếu không tìm thấy RTC
-    display.clearDisplay();
-    display.setTextSize(1);
-    display.setTextColor(WHITE);
-    display.setCursor(0, 0);
-    display.println("No RTC!");
-    display.display();
-    
-    rtcAvailable = false;  // RTC không khả dụng
-  } else {
-    rtcAvailable = true;
-    if (rtc.lostPower()) {
-      Serial.println("RTC lost power, setting time!");
-      rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    }
-    }}
-    else{
-      Serial.println("Failed to connect WiFi, going offline mode");
-      offlineMode = true;  // Vào chế độ offline nếu không kết nối được WiFi
+      attemptedReconnect = false;
+
+    } else {
+      offlineMode = true;  // Chuyển sang chế độ offline nếu kết nối thất bại
     }
   }
 }
 
 
+// OLED update function
 void updateOLED() {
-  // Lấy thời gian hiện tại từ hệ thống
   time_t rawtime = time(nullptr);
-  struct tm* timeinfo;
-  if(SyncWithPCTime == true){
-    timeinfo = gmtime(&rawtime);
-  } else {
-    timeinfo = localtime(&rawtime);
-  }
-
-
-   if (rtcAvailable) {
-    // Nếu mất WiFi, lấy thời gian từ RTC
+  struct tm* timeinfo; 
+   
+ 
+  if (rtcAvailable) {
     DateTime now = rtc.now();
-    timeinfo = localtime(&rawtime);
-    timeinfo->tm_year = now.year() - 1900;
-    timeinfo->tm_mon = now.month() - 1;
+    timeinfo->tm_year = now.year() ;
+    timeinfo->tm_mon = now.month() ;
     timeinfo->tm_mday = now.day();
     timeinfo->tm_hour = now.hour();
     timeinfo->tm_min = now.minute();
-    timeinfo->tm_sec = now.second();
-  }
+    timeinfo->tm_sec = now.second();}
+    else
+    {
+      timeinfo = SyncWithPCTime ? gmtime(&rawtime) : localtime(&rawtime);
+    }
 
-  // Đọc cảm biến AHT20 nếu có sẵn
   if (aht20.available()) {
     temperature = aht20.getTemperature();
     humidity = aht20.getHumidity();
@@ -329,102 +296,94 @@ void updateOLED() {
 
   display.display();
   
-  // Debug: In thời gian ra Serial
-  Serial.printf("Time: %02d:%02d:%02d\n", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
 }
 
-void handleLED() {
-  
-  // Xử lý lệnh từ client
-  while (client.available() > 0) {
-    a = client.read();
-    ClientData += a;
-  }
+// Handling TCP client commands
+void handleClientCommands() {
+  client = server.available();
+  if (client) {
+    while (client.connected()) {
+      digitalWrite(LED_PIN2, HIGH);
+      client.print("D" + String(temperature) + "T" + String(humidity) + "H\n");
+      updateOLED();
 
-  // Các lệnh điều khiển khác từ client
-   if (ClientData == "ALARM#") {
-    alarmActive = true;
-  } 
+      while (client.available() > 0) {
+        char receivedChar = client.read();
+        clientData += receivedChar;
+      }
 
-  if (ClientData == "LAMP#") {
-   lampActive = true;
-  }
-
-
-  if (ClientData == "BUZZ#") {
-    digitalWrite(BUZZ_PIN, HIGH);
-  } else if (ClientData == "OFF1#") {
-    alarmActive = false;
-    digitalWrite(BUZZ_PIN, LOW);
-  }
-
-  
-  if (ClientData == "ON2#") {
-    digitalWrite(LED_PIN, HIGH);
-  } else if (ClientData == "OFF2#") {
-    lampActive = false;
-    digitalWrite(LED_PIN, LOW);
-  }
-
-  //nhận chuỗi ký tự thời gian từ pc gửi đến thiết bị
-  if (ClientData.startsWith("GMT#")) {
-    String receivedData = ClientData.substring(4);
+      if (clientData == "ALARM#") {
+        alarmActive = true;
+      } else if (clientData == "LAMP#") {
+        lampActive = true;
+      } else if (clientData == "BUZZ#") {
+        digitalWrite(BUZZ_PIN, HIGH);
+      } else if (clientData == "OFF1#") {
+        alarmActive = false;
+        digitalWrite(BUZZ_PIN, LOW);
+      } else if (clientData == "OFF2#") {
+        lampActive = false;
+        digitalWrite(LED_PIN, LOW);
+      }
+      else if (clientData == "ON2#") {
+       digitalWrite(LED_PIN, HIGH);
+  } else if (clientData.startsWith("GMT#")) {
+    String receivedData = clientData.substring(4);
     syncTimeWithLocalTimeAndOffset(receivedData);
   }
 
-  ClientData = ""; //reset chuỗi ký tự 
-}
-
-
-
-void setup() {
-  Serial.begin(115200);
-  setup_oled();       // Khởi tạo OLED trước
-  pinMode_init();     // Khởi tạo các chân GPIO
-  server.begin();     // Khởi động server TCP
-  wifiConnect();  // Kết nối WiFi ban đầu
-}
-
-void loop() {
-  // Nếu WiFi không kết nối và không có RTC, hiển thị thông báo "No RTC"
-  if (WiFi.status() != WL_CONNECTED && !rtcAvailable && offlineMode) {
-    display.clearDisplay();
-    display.setTextSize(1);
-    display.setTextColor(WHITE);
-    display.setCursor(0, 0);
-    display.println("No RTC!");
-    display.println("Press D8 to retry");
-    display.display();
-    
-    // Kiểm tra nút nhấn D8 để thử kết nối lại WiFi
-    int stopButtonState = digitalRead(BUTTON_STOP_PIN);
-    if (stopButtonState == LOW) {
-      offlineMode = false;           // Thoát khỏi chế độ offline để thử kết nối lại
-      attemptedReconnect = true;     // Đánh dấu rằng đã thử kết nối lại
-      wifiConnect();                 // Gọi hàm wifiConnect để thử lại
-      delay(500);                    // Debounce cho nút nhấn
-    }
-  } else if (WiFi.status() == WL_CONNECTED || rtcAvailable) {
-    // Hệ thống hoạt động bình thường, cập nhật OLED và xử lý các chức năng khác
-    unsigned long currentMillis = millis();
-    if (currentMillis - previousMillis >= interval) {
-      previousMillis = currentMillis;
-      updateOLED();
-    }
-
-    client = server.available();
-    if (client) {
-      while (client.connected()) {
-        digitalWrite(LED_PIN2, HIGH);
-        client.print("D" + String(temperature) + "T" + String(humidity) + "H\n");
-        updateOLED();
-        while (client.available() > 0) {
-          handleLED();
-        }
-        delay(1000);
-      }
+      clientData = "";
+      delay(500);
       digitalWrite(LED_PIN2, LOW);
-      client.stop();
     }
   }
+}
+
+// Handle system modes
+void handleState() {
+  switch (currentMode) {
+    case OFFLINE_MODE:
+      // Handle offline mode if needed
+      break;
+    case WIFI_CONNECTED_MODE:
+      handleClientCommands();
+      break;
+    case RTC_CONNECTED_MODE:
+      // Handle RTC mode if needed
+      break;
+  }
+}
+
+// Main loop
+void loop() {
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
+    updateOLED();
+  }
+
+  if (rtcAvailable) {
+    currentMode = RTC_CONNECTED_MODE;
+  } else if (WiFi.status() == WL_CONNECTED) {
+    currentMode = WIFI_CONNECTED_MODE;
+  } else {
+    currentMode = OFFLINE_MODE;
+  }
+
+  handleState();
+}
+
+// Setup function
+void setup() {
+  Serial.begin(115200);
+  setup_oled();
+  pinMode_init();
+  server.begin();
+  rtcAvailable = rtc.begin();
+
+  if (!rtcAvailable) {
+    Serial.println("RTC not found");
+  }
+
+  wifiConnect();
 }
